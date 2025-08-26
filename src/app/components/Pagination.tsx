@@ -137,6 +137,10 @@ const Pagination: React.FC<PaginationProps> = ({
         <select
           value={itemsPerPage}
           onChange={(e) => {
+            const newItemsPerPage = Number(e.target.value);
+            if (onItemsPerPageChange) {
+              onItemsPerPageChange(newItemsPerPage); // update parent state
+            }
             // Reset to page 1 when changing items per page
             onPageChange(1);
             // The parent component should handle the itemsPerPage change
