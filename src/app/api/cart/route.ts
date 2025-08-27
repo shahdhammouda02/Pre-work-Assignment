@@ -146,6 +146,7 @@ export async function PUT(request: Request) {
   }
 }
 
+
 // DELETE /api/cart - Remove item from cart
 export async function DELETE(request: Request) {
   try {
