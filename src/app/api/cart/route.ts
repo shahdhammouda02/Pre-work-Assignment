@@ -1,26 +1,93 @@
 // src/app/api/cart/route.ts
-import { NextResponse } from 'next/server';
 
-// GET /api/cart - Get cart items
-export async function GET() {
-  // In a real application, this would fetch cart items from a database
-  // based on user session or authentication token
-  return NextResponse.json({ message: 'Cart API endpoint - GET method' });
+import { NextResponse } from 'next/server';
+import { z, ZodError } from 'zod'; 
+
+// Validation schemas using zod
+const CartItemSchema = z.object({
+  productId: z.string().min(1, 'Product ID is required'),
+  quantity: z.number().int().min(1, 'Quantity must be at least 1'),
+  price: z.number().min(0, 'Price must be non-negative'),
+});
+
+const UpdateCartItemSchema = z.object({
+  productId: z.string().min(1, 'Product ID is required'),
+  quantity: z.number().int().min(0, 'Quantity cannot be negative'),
+});
+
+const DeleteCartItemSchema = z.object({
+  itemId: z.string().min(1, 'Item ID is required'),
+});
+
+// In-memory storage (temporary replacement for a database)
+const carts: Record<string, { productId: string; quantity: number; price: number }[]> = {};
+
+// GET /api/cart - Fetch cart items
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId') || 'default-user';
+
+    const cartItems = carts[userId] || [];
+
+    return NextResponse.json({
+      items: cartItems,
+      totalItems: cartItems.length,
+      totalPrice: cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0),
+    });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error fetching cart items:', errorMessage);
+    return NextResponse.json(
+      { error: 'Failed to fetch cart items', details: errorMessage },
+      { status: 500 }
+    );
+  }
 }
 
 // POST /api/cart - Add item to cart
 export async function POST(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId') || 'default-user';
+
     const body = await request.json();
-    // In a real application, this would add an item to the user's cart in the database
-    return NextResponse.json({ 
+    const validatedData = CartItemSchema.parse(body);
+
+    if (!carts[userId]) {
+      carts[userId] = [];
+    }
+
+    const existingItem = carts[userId].find(
+      (item) => item.productId === validatedData.productId
+    );
+
+    if (existingItem) {
+      existingItem.quantity += validatedData.quantity;
+    } else {
+      carts[userId].push({
+        productId: validatedData.productId,
+        quantity: validatedData.quantity,
+        price: validatedData.price,
+      });
+    }
+
+    return NextResponse.json({
       message: 'Item added to cart successfully',
-      item: body 
+      item: validatedData,
     });
-  } catch (err) {
-    console.error('Error adding item to cart:', err);
+  } catch (error: unknown) {
+    if (error instanceof ZodError) {
+      // Explicitly handle ZodError and access errors property
+      return NextResponse.json(
+        { error: 'Invalid input', details: error.issues }, // Use error.issues instead of error.errors
+        { status: 400 }
+      );
+    }
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error adding item to cart:', errorMessage);
     return NextResponse.json(
-      { error: 'Failed to add item to cart' },
+      { error: 'Failed to add item to cart', details: errorMessage },
       { status: 500 }
     );
   }
@@ -29,16 +96,51 @@ export async function POST(request: Request) {
 // PUT /api/cart - Update cart item
 export async function PUT(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId') || 'default-user';
+
     const body = await request.json();
-    // In a real application, this would update an existing cart item
-    return NextResponse.json({ 
+    const validatedData = UpdateCartItemSchema.parse(body);
+
+    if (!carts[userId]) {
+      return NextResponse.json(
+        { error: 'Cart not found' },
+        { status: 404 }
+      );
+    }
+
+    const itemIndex = carts[userId].findIndex(
+      (item) => item.productId === validatedData.productId
+    );
+
+    if (itemIndex === -1) {
+      return NextResponse.json(
+        { error: 'Item not found in cart' },
+        { status: 404 }
+      );
+    }
+
+    if (validatedData.quantity === 0) {
+      carts[userId].splice(itemIndex, 1);
+    } else {
+      carts[userId][itemIndex].quantity = validatedData.quantity;
+    }
+
+    return NextResponse.json({
       message: 'Cart item updated successfully',
-      item: body 
+      item: validatedData,
     });
-  } catch (err) {
-    console.error('Error updating cart item:', err);
+  } catch (error: unknown) {
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        { error: 'Invalid input', details: error.issues }, // Use error.issues
+        { status: 400 }
+      );
+    }
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error updating cart item:', errorMessage);
     return NextResponse.json(
-      { error: 'Failed to update cart item' },
+      { error: 'Failed to update cart item', details: errorMessage },
       { status: 500 }
     );
   }
@@ -48,17 +150,46 @@ export async function PUT(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const itemId = searchParams.get('itemId');
-    
-    // In a real application, this would remove an item from the user's cart
-    return NextResponse.json({ 
-      message: 'Item removed from cart successfully',
-      itemId 
+    const userId = searchParams.get('userId') || 'default-user';
+    const validatedData = DeleteCartItemSchema.parse({
+      itemId: searchParams.get('itemId'),
     });
-  } catch (err) {
-    console.error('Error removing cart item:', err);
+
+    if (!carts[userId]) {
+      return NextResponse.json(
+        { error: 'Cart not found' },
+        { status: 404 }
+      );
+    }
+
+    const itemIndex = carts[userId].findIndex(
+      (item) => item.productId === validatedData.itemId
+    );
+
+    if (itemIndex === -1) {
+      return NextResponse.json(
+        { error: 'Item not found in cart' },
+        { status: 404 }
+      );
+    }
+
+    carts[userId].splice(itemIndex, 1);
+
+    return NextResponse.json({
+      message: 'Item removed from cart successfully',
+      itemId: validatedData.itemId,
+    });
+  } catch (error: unknown) {
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        { error: 'Invalid input', details: error.issues }, // Use error.issues
+        { status: 400 }
+      );
+    }
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error removing cart item:', errorMessage);
     return NextResponse.json(
-      { error: 'Failed to remove item from cart' },
+      { error: 'Failed to remove item from cart', details: errorMessage },
       { status: 500 }
     );
   }

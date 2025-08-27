@@ -1,20 +1,25 @@
 // src/app/api/books/route.ts
+// src/app/api/books/route.ts
 import { NextResponse } from 'next/server';
-import { books } from '../../data/books';
+import { getAllBooks } from '@/app/services/bookService';
+import type { Book } from '@/app/types/book';
 
-// GET /api/books - Return all books
-export async function GET() {
+/**
+ * GET /api/books
+ * Returns all books from the local data source.
+ */
+export async function GET(): Promise<NextResponse> {
   try {
+    const books: Book[] = getAllBooks();
     return NextResponse.json(books);
-  } catch (err) {
-    console.error('Error fetching books:', err);
+  } catch (error) {
+    console.error('Error fetching books:', error);
     return NextResponse.json(
       { error: 'Failed to fetch books' },
       { status: 500 }
     );
   }
 }
-
 // Future implementation notes:
 // - Connect to a database (e.g., PostgreSQL, MongoDB)
 // - Add authentication middleware for admin operations
