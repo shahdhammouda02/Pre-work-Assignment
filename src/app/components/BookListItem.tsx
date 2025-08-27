@@ -81,7 +81,7 @@ const BookListItem: React.FC<BookListItemProps> = ({ book, onAddToCart }) => {
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200">
-      <div className="flex items-center p-4 gap-4">
+      <div className="flex flex-col md:flex-row items-start md:items-center p-4 gap-4">
         {/* Book Cover/Icon - Left Side */}
         <Link href={`/book/${book.id}`} className="flex-shrink-0 cursor-pointer">
           <div className="w-16 h-20 bg-gray-200 rounded-md flex items-center justify-center hover:bg-gray-300 transition-colors duration-200">
@@ -90,8 +90,8 @@ const BookListItem: React.FC<BookListItemProps> = ({ book, onAddToCart }) => {
         </Link>
 
         {/* Book Information - Right Side */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 min-w-0 w-full">
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 w-full">
             {/* Main Info */}
             <div className="flex-1 min-w-0">
               <Link href={`/book/${book.id}`} className="block group cursor-pointer">
@@ -104,7 +104,7 @@ const BookListItem: React.FC<BookListItemProps> = ({ book, onAddToCart }) => {
               {/* Rating and Reviews */}
               <div className="flex items-center mt-2 gap-2">
                 {renderStars(book.rating)}
-                <span className="text-sm text-gray-500">
+                <span className="text-xs md:text-sm text-gray-500">
                   {book.rating.toFixed(1)} ({book.reviewCount.toLocaleString()} reviews)
                 </span>
               </div>
@@ -135,9 +135,9 @@ const BookListItem: React.FC<BookListItemProps> = ({ book, onAddToCart }) => {
             </div>
 
             {/* Price and Actions */}
-            <div className="flex flex-col items-end gap-3">
-              <div className="text-right">
-                <p className="text-xl font-bold text-gray-900">${book.price.toFixed(2)}</p>
+            <div className="flex flex-col md:items-end gap-3 w-full md:w-auto">
+              <div className="text-left md:text-right">
+                <p className="text-lg md:text-xl font-bold text-gray-900">${book.price.toFixed(2)}</p>
                 {book.featured && (
                   <span className="inline-block bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full mt-1">
                     Featured
@@ -146,8 +146,8 @@ const BookListItem: React.FC<BookListItemProps> = ({ book, onAddToCart }) => {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col gap-2 min-w-[120px]">
-                <Link href={`/book/${book.id}`} className="cursor-pointer">
+              <div className="flex flex-row md:flex-col gap-2 w-full md:min-w-[120px]">
+                <Link href={`/book/${book.id}`} className="cursor-pointer flex-1 md:flex-none">
                   <button className="w-full px-3 py-2 text-sm border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors duration-200 cursor-pointer">
                     View Details
                   </button>
