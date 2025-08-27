@@ -878,7 +878,7 @@ export const books: Book[] = [
   {
     id: '46',
     title: 'Amana Bootcamp - Group 10',
-    author: 'Eng. (Shahd Hammouda & Latifa Al Jarrah & Eman Ashour & Farah Tabal)',
+    author: 'Eng. (Shahd Hammouda & Eman Ashour & Farah Tabal)',
     description: 'Pre-work assignment for Group 10 of the Amana Bootcamp.',
     price: 150.35,
     image: '/images/book3.jpg',
